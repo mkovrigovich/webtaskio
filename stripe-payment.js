@@ -35,7 +35,6 @@ if (monthly === "1") {
       email: req.query.email,
     }, function(err, customer) {
       if (err) return error('Step #2 Customer' + err)
-      //resolvedCustomer = customer;
       stripe(STRIPE_SECRET_KEY).subscriptions.create({
         source: req.body.stripeToken,
         customer: customer.id,
@@ -99,7 +98,7 @@ function renderBody(body) {
 
 function renderInputForm(ctx) {
   return renderBody(`
-          <h3>Paymeint Information:</h3>
+          <h3>Payment Information:</h3>
           <form name="info" action="/stripe-payment/button" method="GET">
             <div class="form-group row justify-content-md-center">
               <div class="col-md-4 col-offset-4">
