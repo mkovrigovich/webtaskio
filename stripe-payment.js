@@ -14,63 +14,63 @@ app.use(bodyParser.urlencoded());
 
 app.post('/payment', (req,res) => {
   var ctx = req.webtaskContext;
-const monthly = req.query.monthly;
-var STRIPE_SECRET_KEY = ctx.secrets.STRIPE_SECRET_KEY;
+  const monthly = req.query.monthly;
+  var STRIPE_SECRET_KEY = ctx.secrets.STRIPE_SECRET_KEY;
 
-if (monthly === "1") {
-  let resolvedPlan, resolvedCustomer;
+  if (monthly === "1") {
+    let resolvedPlan, resolvedCustomer;
 
-  const error = message => res.end(renderBody(`<h1 class="alert alert-danger" role="alert">${message}</h1>` + showBack()));
+    const error = message => res.end(renderBody(`<h1 class="alert alert-danger" role="alert">${message}</h1>` + showBack()));
 
-  const plan = stripe(STRIPE_SECRET_KEY).plans.create({
-    product: {name: `${req.query.description}`},
-    currency: 'usd',
-    interval: 'month',
-    nickname: `${req.query.description}_${Date.now()}`,
-    amount: req.query.amount,
-  }, function(err, plan) {
-    if (err) return error('Step #1 Plan' + err)
-    //resolvedPlan = plan;
-    stripe(STRIPE_SECRET_KEY).customers.create({
-      email: req.query.email,
-    }, function(err, customer) {
-      if (err) return error('Step #2 Customer' + err)
-      stripe(STRIPE_SECRET_KEY).subscriptions.create({
-        source: req.body.stripeToken,
-        customer: customer.id,
-        items: [{plan: plan.id}],
-      }, function(err, subscription) {
-        if (err) return error('Step #3 Subscription' + err);
-        return res.end(renderBody('<h1 class="alert alert-success" role="alert">Success</h1>' + showBack()));
+    const plan = stripe(STRIPE_SECRET_KEY).plans.create({
+      product: {name: `${req.query.description}`},
+      currency: 'usd',
+      interval: 'month',
+      nickname: `${req.query.description}_${Date.now()}`,
+      amount: req.query.amount,
+    }, function(err, plan) {
+      if (err) return error('Step #1 Plan' + err)
+      //resolvedPlan = plan;
+      stripe(STRIPE_SECRET_KEY).customers.create({
+        email: req.query.email,
+      }, function(err, customer) {
+        if (err) return error('Step #2 Customer' + err)
+        stripe(STRIPE_SECRET_KEY).subscriptions.create({
+          source: req.body.stripeToken,
+          customer: customer.id,
+          items: [{plan: plan.id}],
+        }, function(err, subscription) {
+          if (err) return error('Step #3 Subscription' + err);
+          return res.end(renderBody('<h1 class="alert alert-success" role="alert">Success</h1>' + showBack()));
+        });
       });
+
+    })
+
+  } else {
+    stripe(STRIPE_SECRET_KEY).charges.create({
+      amount: req.query.amount,
+      currency: req.query.currency,
+      source: req.body.stripeToken,
+      description: req.query.description
+    }, (err, charge) => {
+      const status = err ? 400: 200;
+      const message = err ? err.message: 'Payment done!';
+      res.writeHead(status, { 'Content-Type': 'text/html' });
+      return res.end(renderBody('<h1>' + message + '</h1>' + showBack()));
     });
-
-  })
-
-} else {
-  stripe(STRIPE_SECRET_KEY).charges.create({
-    amount: req.query.amount,
-    currency: req.query.currency,
-    source: req.body.stripeToken,
-    description: req.query.description
-  }, (err, charge) => {
-    const status = err ? 400: 200;
-  const message = err ? err.message: 'Payment done!';
-  res.writeHead(status, { 'Content-Type': 'text/html' });
-  return res.end(renderBody('<h1>' + message + '</h1>' + showBack()));
-});
-}
+  }
 });
 
 // comment this to disable the test form
 app.get('/', (req, res) => {
   var ctx = req.webtaskContext;
-res.send(renderInputForm(ctx));
+  res.send(renderInputForm(ctx));
 });
 
 app.get('/button', (req, res) => {
   var ctx = req.webtaskContext;
-res.send(renderPaymentButton(req, ctx));
+  res.send(renderPaymentButton(req, ctx));
 });
 
 function renderBody(body) {
@@ -109,7 +109,7 @@ function renderInputForm(ctx) {
                         <div class="input-group-prepend">
                           <span class="input-group-text">$</span>
                         </div>
-                        <input type="number" name="amount" min="1" class="form-control" aria-label="Amount (to the nearest dollar)" required>
+                        <input type="number" name="amount" min="1" class="form-control" aria-label="Amount (to the nearest dollar)" required placeholder="Amount">
                         <div class="input-group-append">
                           <span class="input-group-text">.00</span>
                         </div>
